@@ -42,6 +42,7 @@ const ChatContent: FC<ChatContentProps> = ({
   isEnded = true,
   deleteMsg,
   reportMsg,
+  regenerateMaxCount,
   regenerateMessages,
   handleVersionChange,
   handleInterventionActionClick,
@@ -207,6 +208,7 @@ const ChatContent: FC<ChatContentProps> = ({
         ? empty // Display empty state
         : data.map((vo, index) => {
           const item: ChatItem | undefined = Array.isArray(vo) ? vo?.find(v => v.is_current) : vo;
+          const isCanRegenerate = (typeof regenerateMaxCount === 'number' && regenerateMaxCount > (Array.isArray(vo) ? vo.length : 1)) || typeof regenerateMaxCount !== 'number'
 
           if (!item) return null
           return (
@@ -378,12 +380,13 @@ const ChatContent: FC<ChatContentProps> = ({
                                 ></div>
                               </Tooltip>
                             </>}
-                            {index === data.length - 1 && !item.is_hidden_refresh && regenerateMessages &&
+                            {(index === data.length - 1 || isCanRegenerate) && !item.is_hidden_refresh && regenerateMessages &&
                               <Tooltip title={t('memoryConversation.refresh')}>
                                 <div
                                   className="rb:size-4 rb:cursor-pointer rb:bg-cover rb:bg-[url('@/assets/images/refresh_gray.svg')]"
                                   onClick={() => regenerateMessages(item)}
                                 ></div>
+
                               </Tooltip>
                             }
 

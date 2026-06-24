@@ -144,6 +144,7 @@ export interface ChatContentProps {
   isEnded?: boolean;
   deleteMsg?: (vo: ChatItem) => void;
   reportMsg?: (vo: ChatItem) => void;
+  regenerateMaxCount?: number;
   regenerateMessages?: (vo: ChatItem) => void;
   handleVersionChange?: (page: number, item: ChatItem) => void;
   handleInterventionActionClick?: (actionId: string, fieldValues: Record<string, string>, execution_id?: string, node_id?: string) => void;
