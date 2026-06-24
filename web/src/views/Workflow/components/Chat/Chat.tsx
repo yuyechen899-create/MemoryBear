@@ -904,10 +904,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({
         onSend={handleSend}
         handleInterventionActionClick={handleInterventionActionClick}
         isEnded={chatIsEnded.current}
-        isSupportTools={true}
+        isSupportTools={appType === 'workflow'}
         regenerateMaxCount={5}
-        regenerateMessages={regenerateMessages}
-        handleVersionChange={handleVersionChange}
+        regenerateMessages={appType === 'workflow' ? regenerateMessages : undefined}
+        handleVersionChange={appType === 'workflow' ? handleVersionChange : undefined}
       />
 
         {appType === 'workflow' &&
