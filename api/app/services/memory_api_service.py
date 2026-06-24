@@ -21,8 +21,8 @@ from app.models import EndUser
 from app.models.app_model import App
 from app.repositories.end_user_repository import EndUserRepository
 from app.schemas.memory_config_schema import ConfigurationError
-from app.schemas.memory_agent_schema import WriteMemoryRequest
-from app.services.memory_agent_service import MemoryAgentService
+from app.schemas.memory_agent_schema import WriteMemoryRequest  # [DEPRECATED] 供 write_memory_sync 同步路径使用
+from app.services.memory_agent_service import MemoryAgentService  # [DEPRECATED] 供 write_memory_sync 同步路径使用
 
 logger = get_logger(__name__)
 
@@ -260,78 +260,79 @@ class MemoryAPIService:
             "end_user_id": end_user_id,
         }
 
-    async def write_memory_sync(
-            self,
-            workspace_id: uuid.UUID,
-            end_user_id: str,
-            message: str,
-            config_id: str,
-            storage_type: str = "neo4j",
-            user_rag_memory_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Write memory synchronously (inline, no Celery).
-
-        Validates end_user, then calls MemoryAgentService.write_memory directly.
-        Blocks until the write completes. Use for cases where the caller needs
-        immediate confirmation.
-
-        Args:
-            workspace_id: Workspace ID for resource validation
-            end_user_id: End user identifier
-            message: Message content to store
-            config_id: Memory configuration ID (required)
-            storage_type: Storage backend (neo4j or rag)
-            user_rag_memory_id: Optional RAG memory ID
-
-        Returns:
-            Dict with status and end_user_id
-
-        Raises:
-            ResourceNotFoundException: If end_user not found
-            BusinessException: If write fails
-        """
-        logger.info(f"Writing memory (sync) for end_user: {end_user_id}, workspace: {workspace_id}")
-
-        self.validate_end_user(end_user_id, workspace_id)
-        self._update_end_user_config(end_user_id, config_id)
-
-        try:
-            messages = message if isinstance(message, list) else [{"role": "user", "content": message}]
-            result = await MemoryAgentService().write_memory(
-                WriteMemoryRequest(
-                    end_user_id=end_user_id,
-                    messages=messages,
-                    config_id=config_id,
-                    storage_type=storage_type,
-                    user_rag_memory_id=user_rag_memory_id or "",
-                ),
-                self.db,
-            )
-
-            logger.info(f"Memory write (sync) successful for end_user: {end_user_id}")
-
-            if isinstance(result, dict):
-                return {
-                    **result,
-                    "status": result.get("status", "unknown"),
-                    "end_user_id": end_user_id,
-                }
-            return {
-                "status": result if isinstance(result, str) else "success",
-                "end_user_id": end_user_id,
-            }
-
-        except ConfigurationError as e:
-            logger.error(f"Memory configuration error for end_user {end_user_id}: {e}")
-            raise BusinessException(message=str(e), code=BizCode.MEMORY_CONFIG_NOT_FOUND)
-        except BusinessException:
-            raise
-        except Exception as e:
-            logger.error(f"Memory write (sync) failed for end_user {end_user_id}: {e}")
-            raise BusinessException(
-                message=f"Memory write failed: {str(e)}",
-                code=BizCode.MEMORY_WRITE_FAILED
-            )
+    # [DEPRECATED] 下一版本移除：write_memory_sync 同步写入路径将改为统一走 dispatcher → push_task 异步路径
+    # async def write_memory_sync(
+    #         self,
+    #         workspace_id: uuid.UUID,
+    #         end_user_id: str,
+    #         message: str,
+    #         config_id: str,
+    #         storage_type: str = "neo4j",
+    #         user_rag_memory_id: Optional[str] = None,
+    # ) -> Dict[str, Any]:
+    #     """Write memory synchronously (inline, no Celery).
+    #
+    #     Validates end_user, then calls MemoryAgentService.write_memory directly.
+    #     Blocks until the write completes. Use for cases where the caller needs
+    #     immediate confirmation.
+    #
+    #     Args:
+    #         workspace_id: Workspace ID for resource validation
+    #         end_user_id: End user identifier
+    #         message: Message content to store
+    #         config_id: Memory configuration ID (required)
+    #         storage_type: Storage backend (neo4j or rag)
+    #         user_rag_memory_id: Optional RAG memory ID
+    #
+    #     Returns:
+    #         Dict with status and end_user_id
+    #
+    #     Raises:
+    #         ResourceNotFoundException: If end_user not found
+    #         BusinessException: If write fails
+    #     """
+    #     logger.info(f"Writing memory (sync) for end_user: {end_user_id}, workspace: {workspace_id}")
+    #
+    #     self.validate_end_user(end_user_id, workspace_id)
+    #     self._update_end_user_config(end_user_id, config_id)
+    #
+    #     try:
+    #         messages = message if isinstance(message, list) else [{"role": "user", "content": message}]
+    #         result = await MemoryAgentService().write_memory(
+    #             WriteMemoryRequest(
+    #                 end_user_id=end_user_id,
+    #                 messages=messages,
+    #                 config_id=config_id,
+    #                 storage_type=storage_type,
+    #                 user_rag_memory_id=user_rag_memory_id or "",
+    #             ),
+    #             self.db,
+    #         )
+    #
+    #         logger.info(f"Memory write (sync) successful for end_user: {end_user_id}")
+    #
+    #         if isinstance(result, dict):
+    #             return {
+    #                 **result,
+    #                 "status": result.get("status", "unknown"),
+    #                 "end_user_id": end_user_id,
+    #             }
+    #         return {
+    #             "status": result if isinstance(result, str) else "success",
+    #             "end_user_id": end_user_id,
+    #         }
+    #
+    #     except ConfigurationError as e:
+    #         logger.error(f"Memory configuration error for end_user {end_user_id}: {e}")
+    #         raise BusinessException(message=str(e), code=BizCode.MEMORY_CONFIG_NOT_FOUND)
+    #     except BusinessException:
+    #         raise
+    #     except Exception as e:
+    #         logger.error(f"Memory write (sync) failed for end_user {end_user_id}: {e}")
+    #         raise BusinessException(
+    #             message=f"Memory write failed: {str(e)}",
+    #             code=BizCode.MEMORY_WRITE_FAILED
+    #         )
 
     async def read_memory_sync(
             self,

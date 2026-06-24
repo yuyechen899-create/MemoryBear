@@ -43,37 +43,38 @@ async def get_memory_info():
     return success(data={}, msg="Memory API - Coming Soon")
 
 
-@router.post("/write/sync")
-@require_api_key(scopes=["memory"])
-@check_end_user_quota
-async def write_memory_sync(
-        request: Request,
-        api_key_auth: ApiKeyAuth = None,
-        db: Session = Depends(get_db),
-        body_placeholder: str = Body(None, description="Placeholder - actual body parsed via request.json()"),
-        language_type: str = Header(default=None, alias="X-Language-Type"),
-):
-    """
-    Write memory synchronously.
-
-    Requires API Key with 'memory' scope.
-    Input schema identical to internal POST /api/memory/writer_service (Write_UserInput).
-    """
-    body = await request.json()
-    payload = Write_UserInput(**body)
-
-    current_user = get_current_user_from_api_key(db, api_key_auth)
-    validate_end_user_in_workspace(db, payload.end_user_id, api_key_auth.workspace_id)
-
-    logger.info(f"V1 memory write (sync) - end_user_id: {payload.end_user_id}, workspace: {api_key_auth.workspace_id}")
-
-    result = await memory_agent_controller.write_server(
-        user_input=payload,
-        language_type=language_type,
-        db=db,
-        current_user=current_user,
-    )
-    return _encode_result(result)
+# [DEPRECATED] 下一版本移除：/write/sync 同步写入端点将改为统一走 dispatcher → push_task 异步路径
+# @router.post("/write/sync")
+# @require_api_key(scopes=["memory"])
+# @check_end_user_quota
+# async def write_memory_sync(
+#         request: Request,
+#         api_key_auth: ApiKeyAuth = None,
+#         db: Session = Depends(get_db),
+#         body_placeholder: str = Body(None, description="Placeholder - actual body parsed via request.json()"),
+#         language_type: str = Header(default=None, alias="X-Language-Type"),
+# ):
+#     """
+#     Write memory synchronously.
+#
+#     Requires API Key with 'memory' scope.
+#     Input schema identical to internal POST /api/memory/writer_service (Write_UserInput).
+#     """
+#     body = await request.json()
+#     payload = Write_UserInput(**body)
+#
+#     current_user = get_current_user_from_api_key(db, api_key_auth)
+#     validate_end_user_in_workspace(db, payload.end_user_id, api_key_auth.workspace_id)
+#
+#     logger.info(f"V1 memory write (sync) - end_user_id: {payload.end_user_id}, workspace: {api_key_auth.workspace_id}")
+#
+#     result = await memory_agent_controller.write_server(
+#         user_input=payload,
+#         language_type=language_type,
+#         db=db,
+#         current_user=current_user,
+#     )
+#     return _encode_result(result)
 
 
 @router.post("/read/sync")
